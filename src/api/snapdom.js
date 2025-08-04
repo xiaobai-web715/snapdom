@@ -1,54 +1,41 @@
-/**
- * Main API for snapDOM: capture DOM elements as SVG and raster images.
- * Provides utilities for exporting, downloading, and converting DOM captures.
- * @module snapdom
- */
+// src/api/snapdom.js
 
 import { captureDOM } from '../core/capture';
 import { isSafari } from '../utils/helpers.js';
 import { extendIconFonts } from '../modules/iconFonts.js';
+import { createContext } from '../core/context';
 
 /**
- * Converts an SVG data URL to an HTMLImageElement (vector).
- *
- * Note: This method returns a vector-based image (`img.src = data:image/svg+xml`)
- * and does NOT apply DPR-based scaling. Use `toPng` or `toCanvas` for raster output.
- *
- * @param {string} url - SVG data URL
- * @param {Object} options
- * @param {number} [options.scale=1] - Optional visual scale (CSS size)
- * @returns {Promise<HTMLImageElement>} The resulting image
+ * Converts a data URL to an HTMLImageElement.
+ * @param {string} url - The data URL of the image.
+ * @param {object} options - Context options including scale.
+ * @returns {Promise<HTMLImageElement>}
  */
-
- async function toImg(url, { scale = 1 } = {}) {
+async function toImg(url, options) {
   const img = new Image();
   img.src = url;
   await img.decode();
 
-  if (scale !== 1) {
-    img.style.width = `${img.naturalWidth * scale}px`;
-    img.style.height = `${img.naturalHeight * scale}px`;
+  if (options.scale !== 1) {
+    img.style.width = `${img.naturalWidth * options.scale}px`;
+    img.style.height = `${img.naturalHeight * options.scale}px`;
   }
 
   return img;
 }
 
 /**
- * Converts an SVG data URL to a Canvas element.
- *
- * @param {string} url - SVG data URL
- * @param {Object} options
- * @param {number} [options.dpr=1] - Device pixel ratio
- * @param {number} [options.scale=1] - Scale multiplier
- * @returns {Promise<HTMLCanvasElement>} The resulting canvas
+ * Converts a data URL to a Canvas element.
+ * @param {string} url - The image data URL.
+ * @param {object} options - Context including scale and dpr.
+ * @returns {Promise<HTMLCanvasElement>}
  */
-
-async function toCanvas(url, { dpr = 1, scale = 1 } = {}) {
+async function toCanvas(url, options) {
   const img = new Image();
-  img.src = url;
   img.crossOrigin = 'anonymous';
   img.loading = 'eager';
   img.decoding = 'sync';
+  img.src = url;
 
   const isSafariBrowser = isSafari();
   let appended = false;
@@ -60,34 +47,21 @@ async function toCanvas(url, { dpr = 1, scale = 1 } = {}) {
 
   await img.decode();
 
-  if (isSafariBrowser) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
+  if (isSafariBrowser) await new Promise(resolve => setTimeout(resolve, 100));
 
-  if (img.width === 0 || img.height === 0) {
-    if (appended) img.remove();
-    throw new Error('Image failed to load or has no dimensions');
-  }
-
-const width = img.naturalWidth * scale;
-const height = img.naturalHeight * scale;
+  const width = img.naturalWidth * options.scale;
+  const height = img.naturalHeight * options.scale;
 
   const canvas = document.createElement('canvas');
+  const dpr = options.dpr;
+  canvas.width = Math.ceil(width * dpr);
+  canvas.height = Math.ceil(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
 
-
-canvas.width = Math.ceil(width * dpr);
-canvas.height = Math.ceil(height * dpr);
-canvas.style.width = `${width}px`;
-canvas.style.height = `${height}px`;
-
-const ctx = canvas.getContext("2d");
-
-// Scale the context so drawing happens in logical pixels
-ctx.scale(dpr, dpr);
-
-// Draw using unscaled dimensions
-ctx.drawImage(img, 0, 0, width, height);
-
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.drawImage(img, 0, 0, width, height);
 
   if (appended) img.remove();
 
@@ -95,64 +69,22 @@ ctx.drawImage(img, 0, 0, width, height);
 }
 
 /**
- * Converts a DOM snapshot (SVG data URL) into a Blob of the specified format.
- *
- * @param {string} url - SVG data URL
- * @param {Object} [options]
- * @param {string} [options.format="svg"] - Output format: "svg", "png", "jpeg", "webp"
- * @param {number} [options.dpr=1] - Device pixel ratio
- * @param {number} [options.scale=1] - Scale multiplier
- * @param {string} [options.backgroundColor="#fff"] - Background for raster formats
- * @param {number} [options.quality] - JPEG/WebP quality (0–1)
- * @returns {Promise<Blob>} The resulting Blob
+ * Adds a background color to the canvas if specified.
+ * @param {string} url - Image data URL.
+ * @param {object} options - Context including backgroundColor.
+ * @returns {Promise<HTMLCanvasElement>}
  */
-async function toBlob(url, {
-  type = "svg",
-  scale = 1,
-  backgroundColor = "#fff",
-  quality
-} = {}) {
-  const mime = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    webp: "image/webp",
-  }[type] || "image/png";
+async function createBackground(url, options) {
+  const baseCanvas = await toCanvas(url, options);
 
-  if (type === "svg") {
-    const svgText = decodeURIComponent(url.split(",")[1]);
-    return new Blob([svgText], { type: "image/svg+xml" });
-  }
+  if (!options.backgroundColor || !baseCanvas.width || !baseCanvas.height) return baseCanvas;
 
-  const canvas = await createBackground(url, { dpr: 1, scale }, backgroundColor);
-  return new Promise((resolve) => {
-    canvas.toBlob(blob => resolve(blob), `${mime}`, quality);
-  });
-}
-
-
-
-/**
- * Creates a canvas with a background color from an SVG data URL.
- *
- * @param {string} url - SVG data URL
- * @param {Object} options
- * @param {number} [options.dpr=1] - Device pixel ratio
- * @param {number} [options.scale=1] - Scale multiplier
- * @param {string} [backgroundColor] - Background color to apply
- * @returns {Promise<HTMLCanvasElement>} The resulting canvas
- */
-
- async function createBackground(url, { dpr = 1, scale = 1 }, backgroundColor) {
-  const baseCanvas = await toCanvas(url, { dpr, scale });
-  if (!backgroundColor) return baseCanvas;
-
-  const temp = document.createElement("canvas");
+  const temp = document.createElement('canvas');
   temp.width = baseCanvas.width;
   temp.height = baseCanvas.height;
-  const ctx = temp.getContext("2d");
+  const ctx = temp.getContext('2d');
 
-  ctx.fillStyle = backgroundColor;
+  ctx.fillStyle = options.backgroundColor;
   ctx.fillRect(0, 0, temp.width, temp.height);
   ctx.drawImage(baseCanvas, 0, 0);
 
@@ -160,140 +92,151 @@ async function toBlob(url, {
 }
 
 /**
- * Converts an SVG data URL to a raster image (PNG, JPEG, WebP).
- *
- * @param {string} url - SVG data URL
- * @param {Object} options
- * @param {number} [options.dpr=1] - Device pixel ratio
- * @param {number} [options.scale=1] - Scale multiplier
- * @param {string} [options.backgroundColor="#fff"] - Background color for rasterization
- * @param {number} [options.quality] - Image quality (for JPEG/WebP)
- * @param {string} [format="png"] - Output format: "png", "jpeg", or "webp"
- * @returns {Promise<HTMLImageElement>} The resulting raster image
+ * Converts the rendered output to a Blob.
+ * @param {string} url - Image data URL.
+ * @param {object} options - Context including type and quality.
+ * @returns {Promise<Blob>}
  */
+async function toBlob(url, options) {
+  const type = options.type;
+  
+  if (type === 'svg') {
+    const svgText = decodeURIComponent(url.split(',')[1]);
+    return new Blob([svgText], { type: 'image/svg+xml' });
+  }
 
- async function toRasterImg(url, { dpr = 1, scale = 1, backgroundColor, quality }, format = "png") {
-  const defaultBg = ["jpg", "jpeg", "webp"].includes(format) ? "#fff" : undefined;
-  const finalBg = backgroundColor ?? defaultBg;
+  const canvas = await createBackground(url, options);
+  const mimeType = `image/${type}`;
+  
+  return new Promise(resolve => canvas.toBlob(blob => resolve(blob), mimeType, options.quality));
+}
 
-  const canvas = await createBackground(url, { dpr, scale }, finalBg);
-
+/**
+ * Converts to an HTMLImageElement with raster format.
+ * @param {string} url - Image data URL.
+ * @param {object} options - Context including format and dpr.
+ * @returns {Promise<HTMLImageElement>}
+ */
+async function toRasterImg(url, options) {
+  const format = options.format;
+  const canvas = await createBackground(url, options);
   const img = new Image();
-  img.src = canvas.toDataURL(`image/${format}`, quality);
+  
+  img.src = canvas.toDataURL(`image/${format}`, options.quality);
   await img.decode();
 
-  img.style.width = `${canvas.width / dpr}px`;
-  img.style.height = `${canvas.height / dpr}px`;
+  img.style.width = `${canvas.width / options.dpr}px`;
+  img.style.height = `${canvas.height / options.dpr}px`;
 
   return img;
 }
 
 /**
- * Downloads a captured image in the specified format.
- *
- * @param {string} url - SVG data URL
- * @param {Object} options
- * @param {number} [options.dpr=1] - Device pixel ratio
- * @param {number} [options.scale=1] - Scale multiplier
- * @param {string} [options.backgroundColor="#fff"] - Background color for rasterization
- * @param {string} [options.format="png"] - Output format
- * @param {string} [options.filename="capture"] - Download filename
- * @returns {Promise<void>} Resolves when download is triggered
+ * Triggers download of the generated image.
+ * @param {string} url - Image data URL.
+ * @param {object} options - Context including format, quality, filename.
  */
-
- async function download(url,{ dpr = 1, scale = 1, backgroundColor, format = "png", filename = "snapDOM"} = {}) {
-  if (format === "svg") {
-    const blob = await toBlob(url);
+async function download(url, options) {
+  const format = options.format;
+  
+  if (format === 'svg') {
+    const blob = await toBlob(url, { ...options, type: 'svg' });
     const objectURL = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = objectURL;
-    a.download = `${filename}.svg`;
+    a.download = options.filename;
     a.click();
     URL.revokeObjectURL(objectURL);
     return;
   }
 
-  const defaultBg = ["jpg", "jpeg", "webp"].includes(format) ? "#fff" : undefined;
-  const finalBg = backgroundColor ?? defaultBg;
-
-  const canvas = await createBackground(url, { dpr, scale }, finalBg);
-  const mime = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    webp: "image/webp",
-  }[format] || "image/png";
-
-  const dataURL = canvas.toDataURL(mime);
-
-  const a = document.createElement("a");
-  a.href = dataURL;
-  a.download = `${filename}.${format}`;
+  const canvas = await createBackground(url, options);
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL(`image/${format}`, options.quality);
+  a.download = options.filename;
   a.click();
 }
 
 /**
- * Main entry point: captures a DOM element and returns an object with export methods.
- *
- * @param {Element} element - DOM element to capture
- * @param {Object} [options={}] - Capture options
- * @returns {Promise<Object>} Object with export methods (toRaw, toImg, toCanvas, etc.)
+ * Main function that captures a DOM element and returns export utilities.
+ * @param {HTMLElement} element - The DOM element to capture.
+ * @param {object} userOptions - Options for rendering/exporting.
+ * @returns {Promise<object>} - Utilities for converting the captured content.
  */
+export async function snapdom(element, userOptions) {
+  if (!element) throw new Error('Element cannot be null or undefined');
 
-export async function snapdom(element, options = {}) {
-  options = { scale: 1, ...options };
-  if (!element) throw new Error("Element cannot be null or undefined");
-  if (options.iconFonts) {
-    extendIconFonts(options.iconFonts);
-  }
-  return await snapdom.capture(element, options);
+  const context = createContext(userOptions);
+
+  if (context.iconFonts && context.iconFonts.length > 0) extendIconFonts(context.iconFonts);
+
+  return snapdom.capture(element, context);
 }
 
 /**
- * Captures a DOM element and returns an object with export methods (internal use).
- *
- * @param {Element} el - DOM element to capture
- * @param {Object} [options={}] - Capture options
- * @returns {Promise<Object>} Object with export methods
+ * Captures the DOM and returns helper methods for transformation/export.
+ * @param {HTMLElement} el - The DOM element to capture.
+ * @param {object} context - Normalized context options.
+ * @returns {Promise<object>} - Exporter functions.
  */
+snapdom.capture = async (el, context) => {
+  const url = await captureDOM(el, context);
 
-snapdom.capture = async (el, options = {}) => {
-  const url = await captureDOM(el, options);
-const dpr = options.dpr ?? (window.devicePixelRatio || 1);
-  const scale = options.scale || 1;
+  const ensureContext = (opts) => createContext({ ...context, ...(opts || {}) });
+  const withFormat = (format) => (opts) =>
+    toRasterImg(url, ensureContext({ ...(opts || {}), format }));
 
   return {
     url,
-    options,
     toRaw: () => url,
-    toImg: (opts = {}) => toImg(url, { dpr, scale, ...opts }),
-    toCanvas: (opts = {}) => toCanvas(url, { dpr, scale, ...opts }),
-    toBlob: (opts = {}) => toBlob(url, { dpr, scale, ...opts }),
-    toPng: (opts = {}) => toRasterImg(url, { dpr, scale, ...opts }, "png"),
-    toJpg: (opts = {}) => toRasterImg(url, { dpr, scale, ...opts }, "jpeg"),
-    toWebp: (opts = {}) => toRasterImg(url, { dpr, scale, ...opts }, "webp"),
-    download: ({ format = "png", filename = "snapDOM", backgroundColor, ...opts } = {}) =>
-      download(url, { dpr, scale, format, filename, backgroundColor, ...opts }),
+    toImg: (opts) => toImg(url, ensureContext(opts)),
+    toCanvas: (opts) => toCanvas(url, ensureContext(opts)),
+    toBlob: (opts) => toBlob(url, ensureContext(opts)),
+    toPng: withFormat('png'),
+    toJpg: withFormat('jpeg'),
+    toWebp: withFormat('webp'),
+    download: (opts) => download(url, ensureContext(opts)),
   };
-
 };
 
-// Compatibilidad
-snapdom.toRaw = async (el, options) => (await snapdom.capture(el, options)).toRaw();
-snapdom.toImg = async (el, options) => (await snapdom.capture(el, options)).toImg();
-snapdom.toCanvas = async (el, options) => (await snapdom.capture(el, options)).toCanvas();
-snapdom.toBlob = async (el, options) => (await snapdom.capture(el, options)).toBlob(options);
-snapdom.toPng = async (el, options) => (await snapdom.capture(el, options)).toPng(options);
-snapdom.toJpg = async (el, options) => (await snapdom.capture(el, options)).toJpg(options);
-snapdom.toWebp = async (el, options) => (await snapdom.capture(el, options)).toWebp(options);
-snapdom.download = async (el, options = {}) => {
-  const {
-    format = "png",
-    filename = "capture",
-    backgroundColor,
-    ...rest
-  } = options;
+// Compatibility methods — all normalize options through snapdom first
 
-  const capture = await snapdom.capture(el, rest);
-  return await capture.download({ format, filename, backgroundColor });
-};
+/**
+ * Returns the raw data URL from a captured element.
+ */
+snapdom.toRaw = (el, options) => snapdom(el, options).then(result => result.toRaw());
+
+/**
+ * Returns an HTMLImageElement from a captured element.
+ */
+snapdom.toImg = (el, options) => snapdom(el, options).then(result => result.toImg());
+
+/**
+ * Returns a Canvas element from a captured element.
+ */
+snapdom.toCanvas = (el, options) => snapdom(el, options).then(result => result.toCanvas());
+
+/**
+ * Returns a Blob from a captured element.
+ */
+snapdom.toBlob = (el, options) => snapdom(el, options).then(result => result.toBlob());
+
+/**
+ * Returns a PNG image from a captured element.
+ */
+snapdom.toPng = (el, options) => snapdom(el, { ...options, format: 'png' }).then(result => result.toPng());
+
+/**
+ * Returns a JPEG image from a captured element.
+ */
+snapdom.toJpg = (el, options) => snapdom(el, { ...options, format: 'jpeg' }).then(result => result.toJpg());
+
+/**
+ * Returns a WebP image from a captured element.
+ */
+snapdom.toWebp = (el, options) => snapdom(el, { ...options, format: 'webp' }).then(result => result.toWebp());
+
+/**
+ * Downloads the captured image in the specified format.
+ */
+snapdom.download = (el, options) => snapdom(el, options).then(result => result.download());
