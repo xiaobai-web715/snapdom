@@ -5,6 +5,9 @@ import { isSafari } from '../utils/helpers.js';
 import { extendIconFonts } from '../modules/iconFonts.js';
 import { createContext } from '../core/context';
 
+// Token to prevent public use of snapdom.capture
+const INTERNAL_TOKEN = Symbol('snapdom.internal');
+
 /**
  * Converts a data URL to an HTMLImageElement.
  * @param {string} url - The data URL of the image.
@@ -170,7 +173,7 @@ export async function snapdom(element, userOptions) {
 
   if (context.iconFonts && context.iconFonts.length > 0) extendIconFonts(context.iconFonts);
 
-  return snapdom.capture(element, context);
+  return snapdom.capture(element, context, INTERNAL_TOKEN);
 }
 
 /**
@@ -179,7 +182,10 @@ export async function snapdom(element, userOptions) {
  * @param {object} context - Normalized context options.
  * @returns {Promise<object>} - Exporter functions.
  */
-snapdom.capture = async (el, context) => {
+snapdom.capture = async (el, context, _token) => {
+  if (_token !== INTERNAL_TOKEN) {
+    throw new Error('[snapdom.capture] is internal. Use snapdom(...) instead.');
+  }
   const url = await captureDOM(el, context);
 
   const ensureContext = (opts) => createContext({ ...context, ...(opts || {}) });

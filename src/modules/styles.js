@@ -22,7 +22,7 @@ function snapshotComputedStyleFull(style) {
   return result;
 }
 
-export function inlineAllStyles(source, clone, compress) {
+export function inlineAllStyles(source, clone, options) {
   if (source.tagName === 'STYLE') return;
 
   if (!cache.preStyle.has(source)) {
@@ -48,7 +48,7 @@ export function inlineAllStyles(source, clone, compress) {
   }
 
   const tagName = source.tagName?.toLowerCase() || 'div';
-  const key = getStyleKey(snapshot, tagName, compress);
+  const key = getStyleKey(snapshot, tagName, options);
 
   cache.snapshotKey.set(hash, key);
   cache.preStyleMap.set(clone, key);

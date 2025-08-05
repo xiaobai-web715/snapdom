@@ -13,7 +13,6 @@
  * @returns {void}
  *
  * @example
- * const { clone } = await prepareClone(element);
  * inlineExternalDef(clone);
  */
 

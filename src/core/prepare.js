@@ -22,18 +22,18 @@ import { cache } from '../core/cache.js';
  * @returns {Promise<Object>} Object containing the clone, generated CSS, and style cache
  */
 
-export async function prepareClone(element, compress = false, embedFonts = false, options = {}) {
-
+export async function prepareClone(element, options = {}) {
+console.log('prepare', options)
   let clone
   let classCSS = '';
   try {
-    clone = deepClone(element, compress, options, element);
+    clone = deepClone(element, options);
   } catch (e) {
     console.warn("deepClone failed:", e);
     throw e;
   }
   try {
-    await inlinePseudoElements(element, clone, compress, embedFonts, options.useProxy);
+    await inlinePseudoElements(element, clone, options);
   } catch (e) {
     console.warn("inlinePseudoElements failed:", e);
   }
@@ -42,7 +42,7 @@ export async function prepareClone(element, compress = false, embedFonts = false
   } catch (e) {
     console.warn("inlineExternalDef failed:", e);
   }
-  if (compress) {
+  if (options.compress) {
     const keyToClass = generateCSSClasses();
     classCSS = Array.from(keyToClass.entries()).map(([key, className]) => `.${className}{${key}}`).join("");
     for (const [node, key] of cache.preStyleMap.entries()) {

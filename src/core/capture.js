@@ -6,7 +6,7 @@
 import { prepareClone } from './prepare.js';
 import { inlineImages } from '../modules/images.js';
 import { inlineBackgroundImages } from '../modules/background.js';
-import { idle, isSafari } from '../utils/helpers.js';
+import { idle } from '../utils/helpers.js';
 import { collectUsedTagNames, generateDedupedBaseCSS } from '../utils/cssTools.js';
 import { embedCustomFonts } from '../modules/fonts.js';
 import { cache } from '../core/cache.js'
@@ -18,46 +18,45 @@ import { cache } from '../core/cache.js'
  * @param {Object} [options={}] - Capture options
  * @param {boolean} [options.compress=true] - Whether to compress style keys
  * @param {boolean} [options.embedFonts=false] - Whether to embed custom fonts
- * @param {boolean} [options.fast=true] - Whether to skip idle delay for faster results
+ * @param {boolean} [options.options.fast=true] - Whether to skip idle delay for faster results
  * @param {number} [options.scale=1] - Output scale multiplier
  * @param {string[]} [options.exclude] - CSS selectors for elements to exclude
  * @param {Function} [options.filter] - Custom filter function 
  * @returns {Promise<string>} Promise that resolves to an SVG data URL
  */
 
-export async function captureDOM(element, options = {}) {
+export async function captureDOM(element, options) {
   if (!element) throw new Error("Element cannot be null or undefined");
   cache.reset()
-  const { compress = true, embedFonts = false, fast = true, scale = 1, useProxy = ''} = options;
   let clone, classCSS;
   let fontsCSS = "";
   let baseCSS = "";
   let dataURL;
   let svgString;
 
-  ({ clone, classCSS } = await prepareClone(element, compress, embedFonts, options));
+  ({ clone, classCSS } = await prepareClone(element, options));
 
   await new Promise((resolve) => {
     idle(async () => {
       await inlineImages(clone, options);
       resolve();
-    }, { fast });
+    }, options.fast);
   });
   await new Promise((resolve) => {
     idle(async () => {
       await inlineBackgroundImages(element, clone, options);
       resolve();
-    }, { fast });
+    }, options.fast);
   });
-  if (embedFonts) {
+  if (options.embedFonts) {
     await new Promise((resolve) => {
       idle(async () => {
         fontsCSS = await embedCustomFonts();
         resolve();
-      }, { fast });
+      }, options.fast);
     });
   }
-  if (compress) {
+  if (options.compress) {
     const usedTags = collectUsedTagNames(clone).sort();
     const tagKey = usedTags.join(",");
     if (cache.baseStyle.has(tagKey)) {
@@ -68,12 +67,13 @@ export async function captureDOM(element, options = {}) {
           baseCSS = generateDedupedBaseCSS(usedTags);
           cache.baseStyle.set(tagKey, baseCSS);
           resolve();
-        }, { fast });
+        }, options.fast);
       });
     }
   }
-  await new Promise((resolve) => {
-    idle(() => {
+  await new Promise((resolve, reject) => {
+  idle(() => {
+    try {
       const rect = element.getBoundingClientRect();
       let w = rect.width;
       let h = rect.height;
@@ -121,8 +121,12 @@ export async function captureDOM(element, options = {}) {
       svgString = svgHeader + foString + svgFooter;
       dataURL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
       resolve();
-    }, { fast });
-  });
+    } catch (err) {
+      reject(err);
+    }
+  }, options.fast);
+});
+
   const sandbox = document.getElementById("snapdom-sandbox");
   if (sandbox && sandbox.style.position === "absolute") sandbox.remove();
   return dataURL;

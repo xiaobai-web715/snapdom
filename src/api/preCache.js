@@ -12,8 +12,7 @@ import { cache } from '../core/cache.js';
  */
 
 export async function preCache(root = document, options = {}) {
-  const { embedFonts = true, reset = false} = options;
-  if (reset) {
+  if (options.reset) {
     cache.reset()
     return;
   }
@@ -30,7 +29,7 @@ export async function preCache(root = document, options = {}) {
     if (!cache.image.has(src)) {
     
       promises.push(
-        fetchImage(src, { useProxy: options.useProxy}).then((dataURL) => cache.image.set(src, dataURL)).catch(() => {
+        fetchImage(src, options).then((dataURL) => cache.image.set(src, dataURL)).catch(() => {
         })
       );
     }
@@ -50,7 +49,7 @@ export async function preCache(root = document, options = {}) {
       }
     }
   }
-  if (embedFonts) {
+  if (options.embedFonts) {
     await embedCustomFonts({ preCached: true });
   }
   await Promise.all(promises);

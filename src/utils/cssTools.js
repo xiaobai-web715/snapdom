@@ -72,11 +72,11 @@ export function getDefaultStyleForTag(tagName) {
  * @returns {string} Semi-colon separated list of non-default properties
  */
 
-export function getStyleKey(snapshot, tagName, compress = false) {
+export function getStyleKey(snapshot, tagName, options) {
   const entries = [];
   const defaultStyles = getDefaultStyleForTag(tagName);
   for (let [prop, value] of Object.entries(snapshot)) {
-    if (!compress) {
+    if (!options.compress) {
       if (value) {
         entries.push(`${prop}:${value}`);
       }

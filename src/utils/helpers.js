@@ -20,7 +20,7 @@ export async function inlineSingleBackgroundEntry(entry, options = {}) {
     if (cache.background.has(encodedUrl)) {
       return options.skipInline ? void 0 : `url(${cache.background.get(encodedUrl)})`;
     } else {
-      const dataUrl = await fetchImage(encodedUrl, { useProxy: options.useProxy });
+      const dataUrl = await fetchImage(encodedUrl, options);
       cache.background.set(encodedUrl, dataUrl);
       return options.skipInline ? void 0 : `url("${dataUrl}")`;
     }
@@ -132,11 +132,11 @@ export function isIconFont(familyOrUrl) {
  *
  * @export
  * @param {*} src
- * @param {number} [timeout=3000]
  * @return {*} 
  */
 
-export function fetchImage(src, { timeout = 3000, useProxy = '' } = {}) {
+export function fetchImage(src, options) {
+  let timeout = 5000;
   function getCrossOriginMode(url) {
     try {
       const parsed = new URL(url, window.location.href);
@@ -171,8 +171,8 @@ export function fetchImage(src, { timeout = 3000, useProxy = '' } = {}) {
     try {
       return await fetchBlobAsDataURL(url);
     } catch (e) {
-      if (useProxy && typeof useProxy === "string") {
-        const proxied = useProxy.replace(/\/$/, "") + safeEncodeURI(url);
+      if (options.useProxy && typeof options.useProxy === "string") {
+        const proxied = options.useProxy.replace(/\/$/, "") + safeEncodeURI(url);
         try {
           return await fetchBlobAsDataURL(proxied);
         } catch {

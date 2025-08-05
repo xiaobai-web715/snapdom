@@ -10,14 +10,12 @@ import { cache } from '../core/cache.js'
  * Creates a deep clone of a DOM node, including styles, shadow DOM, and special handling for excluded/placeholder/canvas nodes.
  *
  * @param {Node} node - Node to clone
- * @param {boolean} compress - Whether to compress style keys
  * @param {Object} [options={}] - Capture options including exclude and filter 
- * @param {Node} [originalRoot] - Original root element being captured
  * @returns {Node|null} Cloned node with styles and shadow DOM content, or null for empty text nodes or filtered elements
  */
 
  
-export function deepClone(node, compress, options = {}, originalRoot) {
+export function deepClone(node, options) {
   if (!node) throw new Error('Invalid node');
 
   // Local set to avoid duplicates in slot processing
@@ -61,7 +59,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
   // 5. Custom filter function
   if (typeof options.filter === "function") {
     try {
-      if (!options.filter(node, originalRoot || node)) {
+      if (!options.filter(node)) {
         const spacer = document.createElement("div");
         const rect = node.getBoundingClientRect();
         spacer.style.cssText = `display:inline-block;width:${rect.width}px;height:${rect.height}px;visibility:hidden;`;
@@ -83,7 +81,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
   if (node.getAttribute("data-capture") === "placeholder") {
     const clone2 = node.cloneNode(false);
     cache.preNodeMap.set(clone2, node);
-    inlineAllStyles(node, clone2, compress);
+    inlineAllStyles(node, clone2, options);
     const placeholder = document.createElement("div");
     placeholder.textContent = node.getAttribute("data-placeholder-text") || "";
     placeholder.style.cssText = `color:#666;font-size:12px;text-align:center;line-height:1.4;padding:0.5em;box-sizing:border-box;`;
@@ -99,7 +97,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
     img.width = node.width;
     img.height = node.height;
     cache.preNodeMap.set(img, node);
-    inlineAllStyles(node, img, compress);
+    inlineAllStyles(node, img, options);
     return img;
   }
 
@@ -141,7 +139,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
   }
 
   // 11. Inline styles
-  inlineAllStyles(node, clone, compress);
+  inlineAllStyles(node, clone, options);
 
   // 12. ShadowRoot logic
   if (node.shadowRoot) {
@@ -152,7 +150,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
       for (const child of node.shadowRoot.childNodes) {
         if (child.nodeType === Node.ELEMENT_NODE && child.tagName === "STYLE") {
           const cssText = child.textContent || "";
-          if (cssText.trim() && compress) {
+          if (cssText.trim() && options.compress) {
             if (!cache.preStyle) cache.preStyle = new WeakMap();
             cache.preStyle.set(child, cssText);
           }
@@ -164,13 +162,13 @@ export function deepClone(node, compress, options = {}, originalRoot) {
       for (const child of node.shadowRoot.childNodes) {
         if (child.nodeType === Node.ELEMENT_NODE && child.tagName === "STYLE") {
           const cssText = child.textContent || "";
-          if (cssText.trim() && compress) {
+          if (cssText.trim() && options.compress) {
             if (!cache.preStyle) cache.preStyle = new WeakMap();
             cache.preStyle.set(child, cssText);
           }
           continue;
         }
-        const clonedChild = deepClone(child, compress, options, originalRoot || node);
+        const clonedChild = deepClone(child, options);
         if (clonedChild) shadowFrag.appendChild(clonedChild);
       }
       clone.appendChild(shadowFrag);
@@ -184,7 +182,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
     const fragment = document.createDocumentFragment();
 
     for (const child of nodesToClone) {
-      const clonedChild = deepClone(child, compress, options, originalRoot || node);
+      const clonedChild = deepClone(child, options);
       if (clonedChild) fragment.appendChild(clonedChild);
     }
     return fragment;
@@ -194,7 +192,7 @@ export function deepClone(node, compress, options = {}, originalRoot) {
   for (const child of node.childNodes) {
     if (clonedAssignedNodes.has(child)) continue;
 
-    const clonedChild = deepClone(child, compress, options, originalRoot || node);
+    const clonedChild = deepClone(child, options);
     if (clonedChild) clone.appendChild(clonedChild);
   }
 

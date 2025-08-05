@@ -16,8 +16,10 @@ export function createContext(options = {}) {
     filter: options.filter ?? null,
     embedFonts: options.embedFonts ?? false,
     iconFonts: options.iconFonts ?? [],
-
+    reset: options.reset ?? false,
     // Output Configuration
+    width: options.width ?? null,
+    height: options.height ?? null,
     format: options.format ?? 'png',  // 'png'|'jpg'|'jpeg'|'webp'|'svg' 
     type: options.type ?? 'svg',       
     quality: options.quality ?? 0.92,
