@@ -156,3 +156,54 @@ async function buildSVGDataURL(original, clone, {
     }, fast);
   });
 }
+
+
+/**
+ * [Experimental] Render a cloned DOM element into a Canvas using
+ * the proposed HTML-in-Canvas API (`ctx.drawElement`).
+ *
+ * This function attempts to leverage the experimental `drawElement` method
+ * on the 2D canvas context to render HTML elements directly.
+ *
+ * If the API is not supported by the browser, it falls back to
+ * drawing a placeholder rectangle with a warning message.
+ *
+ * @param {Element} original - The original DOM element, used for sizing reference.
+ * @param {Element} clone - The cloned DOM element subtree to render.
+ * @param {Object} [options={}] - Options for rendering.
+ * @param {number} [options.width] - Desired output width in CSS pixels.
+ * @param {number} [options.height] - Desired output height in CSS pixels.
+ * @param {number} [options.scale=1] - Scale multiplier for output resolution.
+ * @returns {Promise<string>} - Resolves to a PNG data URL of the rendered canvas.
+ */
+export async function buildHTMLCanvasDataURL(original, clone, {
+  width,
+  height,
+  scale = 1
+} = {}) {
+  const rect = original.getBoundingClientRect();
+  const w = Math.ceil((width ?? rect.width) * scale);
+  const h = Math.ceil((height ?? rect.height) * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+
+  if (typeof ctx.drawElement === "function") {
+    ctx.reset?.();
+    ctx.drawElement(clone, 0, 0);
+  } else {
+    console.warn("drawElement() not supported by this browser");
+    ctx.fillStyle = "#eee";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#000";
+    ctx.font = "16px sans-serif";
+    ctx.fillText("drawElement() not supported", 10, 30);
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+
