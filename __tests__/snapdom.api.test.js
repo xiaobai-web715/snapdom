@@ -11,7 +11,7 @@ describe('snapdom API (direct)', () => {
     el.style.width = '100px';
     el.style.height = '50px';
     document.body.appendChild(el);
-    const result = await snapdom.capture(el);
+    const result = await snapdom(el);
     expect(result).toHaveProperty('toRaw');
     expect(result).toHaveProperty('toImg');
     expect(result).toHaveProperty('download');
@@ -51,7 +51,7 @@ describe('snapdom API (direct)', () => {
     img.height = 10;
     img.decode = () => Promise.resolve();
     globalThis.Image = function() { return img; };
-    const res = await snapdom.capture(el);
+    const res = await snapdom(el);
     await res.toImg();
     document.body.removeChild(el);
     vi.resetModules();
@@ -84,7 +84,7 @@ describe('snapdom API (direct)', () => {
   el.style.height = '30px';
   document.body.appendChild(el);
 
-  const result = await snapdom.capture(el);
+  const result = await snapdom(el);
 
   const pngBlob = await result.toBlob({ type: 'png' });
   expect(pngBlob).toBeInstanceOf(Blob);
@@ -111,7 +111,7 @@ it('toPng, toJpg, toWebp return HTMLImageElement with  URLs', async () => {
   el.style.width = '60px';
   el.style.height = '40px';
   document.body.appendChild(el);
-  const snap = await snapdom.capture(el);
+  const snap = await snapdom(el);
 
   const pngImg = await snap.toPng();
   expect(pngImg).toBeInstanceOf(HTMLImageElement);

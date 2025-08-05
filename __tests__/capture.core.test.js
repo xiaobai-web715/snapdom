@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { captureDOM } from '../src/core/capture.js';
+import { createContext } from '../src/core/context.js';
 
 describe('captureDOM edge cases', () => {
   it('throws for unsupported element (unknown nodeType)', async () => {
@@ -13,9 +14,10 @@ describe('captureDOM edge cases', () => {
   });
 
   it('throws error if getBoundingClientRect fails', async () => {
+    const options = createContext({})
     const el = document.createElement('div');
     vi.spyOn(el, 'getBoundingClientRect').mockImplementation(() => { throw new Error('fail'); });
-    await expect(captureDOM(el)).rejects.toThrow('fail');
+    await expect(captureDOM(el, options)).rejects.toThrow('fail');
   });
 });
 
@@ -23,7 +25,7 @@ describe('captureDOM functional', () => {
   it('captures a simple div and returns an SVG dataURL', async () => {
     const el = document.createElement('div');
     el.textContent = 'test';
-    const url = await captureDOM(el);
+    const url = await captureDOM(el, {fast:true});
     expect(url.startsWith('data:image/svg+xml')).toBe(true);
   });
 
@@ -31,9 +33,9 @@ describe('captureDOM functional', () => {
     const el = document.createElement('div');
     el.style.width = '100px';
     el.style.height = '50px';
-    await captureDOM(el, { scale: 2 });
-    await captureDOM(el, { width: 200 });
-    await captureDOM(el, { height: 100 });
+    await captureDOM(el, { fast: true, scale: 2 });
+    await captureDOM(el, { fast: true, width: 200 });
+    await captureDOM(el, { fast: true, height: 100 });
   });
 
   it('supports fast=false', async () => {
@@ -43,6 +45,6 @@ describe('captureDOM functional', () => {
 
   it('supports embedFonts', async () => {
     const el = document.createElement('div');
-    await captureDOM(el, { embedFonts: true });
+    await captureDOM(el, { fast: true, embedFonts: true });
   });
 });
