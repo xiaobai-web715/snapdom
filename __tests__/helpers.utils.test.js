@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getStyle, parseContent, extractURL, isIconFont, snapshotComputedStyle, isSafari, stripTranslate, safeEncodeURI, idle, fetchImage } from '../src/utils/helpers.js';
+import { getStyle, parseContent, extractURL, isIconFont, snapshotComputedStyle, isSafari, stripTranslate, safeEncodeURI, idle, fetchImage } from '../src/utils';
 
 describe('getStyle', () => {
   it('returns a CSSStyleDeclaration', () => {

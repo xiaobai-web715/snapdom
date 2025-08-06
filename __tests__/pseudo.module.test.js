@@ -1,5 +1,5 @@
-vi.mock('../src/utils/helpers.js', async () => {
-  const actual = await vi.importActual('../src/utils/helpers.js');
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
   return {
     ...actual,
     fetchImage: vi.fn(),
@@ -15,14 +15,14 @@ vi.mock('../src/modules/fonts.js', async () => {
 
 import { describe, it, expect, vi } from 'vitest';
 import { inlinePseudoElements } from '../src/modules/pseudo.js';
-import * as helpers from '../src/utils/helpers.js';
+import * as helpers from '../src/utils';
 import * as fonts from '../src/modules/fonts.js';
 
 describe('inlinePseudoElements', () => {
   it('does not fail with simple elements', async () => {
     const el = document.createElement('div');
     const clone = document.createElement('div');
-    await expect(inlinePseudoElements(el, clone, new Map(), new WeakMap(), false)).resolves.toBeUndefined();
+    await expect(inlinePseudoElements(el, clone, {})).resolves.toBeUndefined();
   });
 
   it('handles ::before with text content', async () => {
@@ -35,7 +35,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -50,7 +50,7 @@ describe('inlinePseudoElements', () => {
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
     fonts.iconToImage.mockResolvedValue('data:image/png;base64,icon');
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -65,7 +65,7 @@ describe('inlinePseudoElements', () => {
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
     helpers.fetchImage.mockResolvedValue('data:image/png;base64,img');
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -79,7 +79,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -94,7 +94,7 @@ describe('inlinePseudoElements', () => {
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
     helpers.fetchImage.mockResolvedValue('data:image/png;base64,img');
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -109,7 +109,7 @@ describe('inlinePseudoElements', () => {
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
     helpers.fetchImage.mockRejectedValue(new Error('fail'));
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -122,7 +122,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -132,7 +132,7 @@ describe('inlinePseudoElements', () => {
     vi.spyOn(window, 'getComputedStyle').mockImplementation(() => ({
       getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: ''
     }));
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -140,20 +140,20 @@ describe('inlinePseudoElements', () => {
     const el = document.createElement('div');
     const clone = document.createElement('div');
     vi.spyOn(window, 'getComputedStyle').mockImplementation(() => { throw new Error('fail'); });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
   it('ignores if source no es Element', async () => {
     const notElement = {};
     const clone = document.createElement('div');
-    await expect(inlinePseudoElements(notElement, clone, new Map(), new WeakMap(), false)).resolves.toBeUndefined();
+    await expect(inlinePseudoElements(notElement, clone, {})).resolves.toBeUndefined();
   });
 
   it('ignores if clone no es Element', async () => {
     const el = document.createElement('div');
     const notElement = {};
-    await expect(inlinePseudoElements(el, notElement, new Map(), new WeakMap(), false)).resolves.toBeUndefined();
+    await expect(inlinePseudoElements(el, notElement, {})).resolves.toBeUndefined();
   });
 
   it('inserta pseudoEl como ::after', async () => {
@@ -166,7 +166,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -180,7 +180,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -193,7 +193,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -208,7 +208,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '#000', fontSize: '32px', fontWeight: '400', fontFamily: 'Arial' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 
@@ -226,7 +226,7 @@ describe('inlinePseudoElements', () => {
       };
       return { getPropertyValue: () => '', color: '', fontSize: '', fontWeight: '', fontFamily: '' };
     });
-    await inlinePseudoElements(el, clone, new Map(), new WeakMap(), false);
+    await inlinePseudoElements(el, clone, {});
     window.getComputedStyle.mockRestore();
   });
 

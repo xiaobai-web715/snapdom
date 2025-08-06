@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getStyleKey, collectUsedTagNames, getDefaultStyleForTag } from '../src/utils/cssTools.js';
+import { getStyleKey, collectUsedTagNames, getDefaultStyleForTag } from '../src/utils';
 
 describe('getStyleKey', () => {
   it('generates a non-empty style key', () => {

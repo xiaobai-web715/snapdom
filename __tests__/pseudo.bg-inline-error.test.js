@@ -1,5 +1,5 @@
-vi.mock('../src/utils/helpers.js', async () => {
-  const actual = await vi.importActual('../src/utils/helpers.js');
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
   return {
     ...actual,
     inlineSingleBackgroundEntry: vi.fn().mockRejectedValue(new Error('fail')),
