@@ -12,8 +12,8 @@ import {
   fetchImage,
   inlineSingleBackgroundEntry,
   splitBackgroundImage,
-} from '../utils/helpers.js';
-import { getStyleKey } from '../utils/cssTools.js';
+  getStyleKey
+} from '../utils';
 import { iconToImage } from '../modules/fonts.js';
 import { isIconFont } from '../modules/iconFonts.js';
 import { cache } from '../core/cache.js';

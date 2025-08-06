@@ -3,8 +3,7 @@
  * @module prepare
  */
 
-import { generateCSSClasses} from '../utils/cssTools.js';
-import { stripTranslate} from '../utils/helpers.js';
+import { generateCSSClasses, stripTranslate} from '../utils';
 import { deepClone } from './clone.js';
 import { inlinePseudoElements } from '../modules/pseudo.js';
 import { inlineExternalDef } from '../modules/svgDefs.js';

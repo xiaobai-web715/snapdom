@@ -1,6 +1,6 @@
 // src/exporters/toBlob.js
 import { toCanvas } from './toCanvas.js';
-import { createBackground } from '../utils/createBackground.js';
+import { createBackground } from '../utils';
 
 /**
  * Converts the rendered output to a Blob.

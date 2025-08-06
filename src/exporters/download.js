@@ -1,7 +1,7 @@
 // src/exporters/download.js
 import { toBlob } from './toBlob.js';
 import { toCanvas } from './toCanvas.js';
-import { createBackground } from '../utils/createBackground.js';
+import { createBackground } from '../utils';
 
 /**
  * Triggers download of the generated image.

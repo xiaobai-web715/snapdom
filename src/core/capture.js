@@ -6,8 +6,7 @@
 import { prepareClone } from './prepare.js';
 import { inlineImages } from '../modules/images.js';
 import { inlineBackgroundImages } from '../modules/background.js';
-import { idle } from '../utils/helpers.js';
-import { collectUsedTagNames, generateDedupedBaseCSS } from '../utils/cssTools.js';
+import { idle, collectUsedTagNames, generateDedupedBaseCSS } from '../utils';
 import { embedCustomFonts } from '../modules/fonts.js';
 import { cache } from '../core/cache.js'
 

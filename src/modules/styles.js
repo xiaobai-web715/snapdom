@@ -1,5 +1,4 @@
-import { getStyleKey } from '../utils/cssTools.js';
-import { getStyle } from '../utils/helpers.js';
+import { getStyle, getStyleKey } from '../utils';
 import {cache} from '../core/cache.js'
 
 function snapshotComputedStyleFull(style) {

@@ -1,6 +1,6 @@
 // src/exporters/rasterize.js
 import { toCanvas } from '../exporters/toCanvas.js';
-import { createBackground } from '../utils/createBackground.js';
+import { createBackground } from '../utils';
 
 /**
  * Converts to an HTMLImageElement with raster format.

@@ -5,7 +5,7 @@ import { createContext } from '../core/context';
 import { toImg } from '../exporters/toImg.js';
 import { toCanvas } from '../exporters/toCanvas.js';
 import { toBlob } from '../exporters/toBlob.js';
-import { rasterize } from '../utils/rasterize.js';
+import { rasterize } from '../modules/rasterize.js';
 import { download } from '../exporters/download.js';
 
 // Token to prevent public use of snapdom.capture

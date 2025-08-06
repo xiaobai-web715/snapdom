@@ -7,7 +7,7 @@ import {
   getStyle,
   inlineSingleBackgroundEntry,
   splitBackgroundImage,
-} from '../utils/helpers.js'
+} from '../utils'
 import { cache } from '../core/cache.js'
 
 /**
