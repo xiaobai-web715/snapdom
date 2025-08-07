@@ -1,8 +1,3 @@
-/**
- * Utilities for working with CSS styles, defaults, and class generation.
- * @module cssTools
- */
-
 import { cache } from "../core/cache"
 
 const commonTags = [
@@ -158,4 +153,88 @@ export function generateCSSClasses() {
     classMap.set(key, `c${counter++}`);
   }
   return classMap;
+}
+
+/**
+ * Gets the computed style for an element or pseudo-element, with caching.
+ *
+ * @param {Element} el - The element
+ * @param {string|null} [pseudo=null] - The pseudo-element
+ * @returns {CSSStyleDeclaration} The computed style
+ */
+export function getStyle(el, pseudo = null) {
+  if (!(el instanceof Element)) {
+    return window.getComputedStyle(el, pseudo);
+  }
+
+  let map = cache.computedStyle.get(el);
+  if (!map) {
+    map = new Map();
+    cache.computedStyle.set(el, map);
+  }
+
+  if (!map.has(pseudo)) {
+    const st = window.getComputedStyle(el, pseudo);
+    map.set(pseudo, st);
+  }
+
+  return map.get(pseudo);
+}
+
+/**
+ * Parses the CSS content property value, handling unicode escapes.
+ *
+ * @param {string} content - The CSS content value
+ * @returns {string} The parsed content
+ */
+export function parseContent(content) {
+  let clean = content.replace(/^['"]|['"]$/g, "");
+  if (clean.startsWith("\\")) {
+    try {
+      return String.fromCharCode(parseInt(clean.replace("\\", ""), 16));
+    } catch {
+      return clean;
+    }
+  }
+  return clean;
+}
+
+/**
+ *
+ *
+ * @export
+ * @param {*} style
+ * @return {*} 
+ */
+export function snapshotComputedStyle(style) {
+  const snap = {};
+  for (let prop of style) {
+    snap[prop] = style.getPropertyValue(prop);
+  }
+  return snap;
+}
+
+/**
+ *
+ *
+ * @export
+ * @param {*} style
+ * @return {*} 
+ */
+
+export function splitBackgroundImage(bg) {
+  const parts = [];
+  let depth = 0;
+  let lastIndex = 0;
+  for (let i = 0; i < bg.length; i++) {
+    const char = bg[i];
+    if (char === '(') depth++;
+    if (char === ')') depth--;
+    if (char === ',' && depth === 0) {
+      parts.push(bg.slice(lastIndex, i).trim());
+      lastIndex = i + 1;
+    }
+  }
+  parts.push(bg.slice(lastIndex).trim());
+  return parts;
 }
