@@ -22,7 +22,6 @@ import { cache } from '../core/cache.js';
  */
 
 export async function prepareClone(element, options = {}) {
-console.log('prepare', options)
   let clone
   let classCSS = '';
   try {
@@ -49,8 +48,13 @@ console.log('prepare', options)
       const className = keyToClass.get(key);
       if (className) node.classList.add(className);
       const bgImage = node.style?.backgroundImage;
+      const hasIcon =  node.dataset?.snapdomHasIcon;
       node.removeAttribute("style");
       if (bgImage && bgImage !== "none") node.style.backgroundImage = bgImage;
+      if (hasIcon) {
+        node.style.verticalAlign = 'middle';
+        node.style.display = 'inline';
+      }
     }
   } else {
     for (const [node, key] of cache.preStyleMap.entries()) {

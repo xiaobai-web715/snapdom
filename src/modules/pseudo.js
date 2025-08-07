@@ -114,15 +114,18 @@ export async function inlinePseudoElements(source, clone, options) {
 
       const pseudoEl = document.createElement('span');
       pseudoEl.dataset.snapdomPseudo = pseudo;
+      pseudoEl.style.verticalAlign = 'middle'
       const snapshot = snapshotComputedStyle(style);
       const key = getStyleKey(snapshot, 'span', options);
       cache.preStyleMap.set(pseudoEl, key);
 
       if (isIconFont2 && cleanContent.length === 1) {
-        const imgEl = document.createElement('img');
-        imgEl.src = await iconToImage(cleanContent, fontFamily, fontWeight, fontSize, color);
-        imgEl.style = `width:${fontSize}px;height:auto;object-fit:contain;`;
-        pseudoEl.appendChild(imgEl);
+       const { dataUrl, width, height } = await iconToImage(cleanContent, fontFamily, fontWeight, fontSize, color);
+const imgEl = document.createElement("img");
+imgEl.src = dataUrl;
+imgEl.style = `height:${fontSize}px;width:${(width / height) * fontSize}px;object-fit:contain;`;
+pseudoEl.appendChild(imgEl);
+        clone.dataset.snapdomHasIcon = "true";
       } else if (cleanContent.startsWith('url(')) {
         const rawUrl = extractURL(cleanContent);
         if (rawUrl?.trim()) {
